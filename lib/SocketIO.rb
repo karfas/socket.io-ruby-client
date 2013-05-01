@@ -1,6 +1,7 @@
+require 'rubygems'
 require 'web_socket'
 require 'rest_client'
-require 'json'
+require 'oj'
 require 'parser'
 
 module SocketIO
@@ -19,7 +20,8 @@ module SocketIO
   end
 
   class Client
-    VERSION = "0.0.2"
+    VERSION 		= "0.0.2"
+    DEFAULT_MODE	= {:mode => :compat}
 
     [:INT, :TERM].each do |sig|
       Signal.trap(sig) do
@@ -82,7 +84,7 @@ module SocketIO
           when '4'
             @on_json_message.call decoded[:data] if @on_json_message
           when '5'
-            message = JSON.parse(decoded[:data])
+            message = json_parse(decoded[:data])
             @on_event[message['name']].call message['args'] if @on_event[message['name']]
           when '6'
             @on_ack.call if @on_ack
@@ -115,19 +117,17 @@ module SocketIO
       @transport.send("2::") #rescue false
     end
 
-    def send_message(string)
+    def send(string)
       @transport.send("3:::#{string}") #rescue false
     end
-    alias :send :send_message
 
     def send_json_message(hash)
-      @transport.send("4:::#{hash.to_json}") # rescue false
+      @transport.send("4:::#{json_stringify(hash)}") # rescue false
     end
 
-    def send_event(name, hash)
-      @transport.send("5:::#{{name: name, args: [hash]}.to_json}") # rescue false
+    def emit(name, hash)
+      @transport.send("5:::#{json_stringify({name: name, args: [hash]})}") # rescue false
     end
-    alias :emit :send_event
 
     def before_start(&block)
       @before_start = block
@@ -172,6 +172,12 @@ module SocketIO
     def on_noop(&block)
       @on_noop = block
     end
+
+    private
+
+    def json_parse(json); Oj.load(json, :mode => :compat) end
+    
+    def json_stringify(json); Oj.dump(json, :mode => :compat) end
   end
 
 end

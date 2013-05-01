@@ -1,7 +1,7 @@
 describe SocketIO do
   
   before :all do
-    @client = SocketIO.connect("http://localhost", :sync => true)
+    @client = SocketIO.connect("http://localhost:8080", :sync => true)
   end
 
   it "can send a heartbeat" do
@@ -15,7 +15,7 @@ describe SocketIO do
       count += 1 if msg == "hay dude"
     end
     @client.send("hay dude")
-    sleep 0.5
+    sleep 1
     count.should == 1
   end
 
@@ -25,7 +25,7 @@ describe SocketIO do
       count += 1 if data[0] == {"first"=>"element", "second"=>"guy"}
     end 
     @client.emit("event", {first: "element", second: "guy"})
-    sleep 0.5
+    sleep 1
     count.should == 1
   end
 
